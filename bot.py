@@ -75,9 +75,8 @@ async def on_message(message):
         try:
             blyat = Blyat(MYSQL_USER, MYSQL_PASSWORD,
                           MYSQL_HOST, MYSQL_DATABASE)
-            blyat.add_user(nick)
+            blyat.user_add(nick)
             await channel.send('Du är nu tillagd {}'.format(nick))
-
         except NoDB:
             await channel.send('Något gick fel, förlåt {}'.format(nick))
         except UserExists:
@@ -93,7 +92,7 @@ async def on_message(message):
         beer_add = ('UPDATE scoreboard INNER JOIN users ON '
                     'scoreboard.user_id = users.id SET score = score + 1 '
                     'WHERE users.username = %s')
-        cursor.execute(beer_add, nick)
+        cursor.execute(beer_add, (nick,))
         cnx.commit()
 
         cursor.close()
@@ -110,7 +109,7 @@ async def on_message(message):
         beer_add = ('UPDATE scoreboard INNER JOIN users ON '
                     'scoreboard.user_id = users.id SET score = score - 1 '
                     'WHERE users.username = %s')
-        cursor.execute(beer_add, nick)
+        cursor.execute(beer_add, (nick,))
         cnx.commit()
 
         cursor.close()

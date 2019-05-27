@@ -38,13 +38,13 @@ class Blyat():
         self._cnx.close()
         self._cnx = None
 
-    def add_user(self, user):
+    def user_add(self, user):
         ''' Add a user to the scoreboard '''
         self._connect()
         try:
             add_user = ('INSERT INTO users (username) '
                         'VALUES (%s)')
-            self._cursor.execute(add_user, user)
+            self._cursor.execute(add_user, (user,))
 
             add_score = ('INSERT INTO scoreboard (user_id, score) '
                          'VALUES (%s, %s)')
@@ -63,7 +63,13 @@ class Blyat():
         beer_add = ('UPDATE scoreboard INNER JOIN users ON '
                     'scoreboard.user_id = users.id SET score = score + 1 '
                     'WHERE users.username = %s')
-        self._cursor.execute(beer_add, user)
+        self._cursor.execute(beer_add, (user,))
         self._cnx.commit()
 
         self._disconnect()
+
+    def beer_remove(self, date):
+        ''' Add potential beer dates '''
+
+    def date_add(self, date):
+        ''' Add potential beer dates '''
