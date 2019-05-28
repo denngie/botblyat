@@ -2,6 +2,7 @@
 ''' Blyat class for a simple bot in development '''
 
 from mysql.connector import connect, errors
+COMMANDS = ['!help', '!user add', '!beer add', '!beer remove', '!score']
 
 
 class NoDB(Exception):
@@ -15,32 +16,23 @@ class UserExists(Exception):
 class Blyat():
     ''' Handle the SQL parts in a nice class '''
     def __init__(self, user, password, host, database):
-        self._cnx = None
-        self._cursor = None
-        self._user = user
-        self._password = password
-        self._host = host
-        self._database = database
-
-    def _connect(self):
-        ''' Connect to the database '''
         try:
-            self._cnx = connect(user=self._user, password=self._password,
-                                host=self._host, database=self._database)
+            self._cnx = connect(user=user, password=password,
+                                host=host, database=database)
             self._cursor = self._cnx.cursor()
         except errors.OperationalError:
             raise NoDB
 
-    def _disconnect(self):
+    def __del__(self):
         ''' Disconnect from the database '''
-        self._cursor.close()
-        self._cursor = None
-        self._cnx.close()
-        self._cnx = None
+        if self._cursor is not None:
+            self._cursor.close()
+        if self._cnx is not None:
+            self._cnx.close()
+        print('Cleaning upp Blyat class')
 
     def user_add(self, user):
         ''' Add a user to the scoreboard '''
-        self._connect()
         try:
             add_user = ('INSERT INTO users (username) '
                         'VALUES (%s)')
@@ -54,22 +46,23 @@ class Blyat():
         except errors.IntegrityError:
             raise UserExists()
 
-        self._disconnect()
-
-    def beer_add(self, user):
+    def beer_alter(self, user, operation):
         ''' Add a beer to the users score '''
-        self._connect()
-
         beer_add = ('UPDATE scoreboard INNER JOIN users ON '
-                    'scoreboard.user_id = users.id SET score = score + 1 '
+                    'scoreboard.user_id = users.id SET score = score %s '
                     'WHERE users.username = %s')
-        self._cursor.execute(beer_add, (user,))
+        self._cursor.execute(beer_add, (user, operation))
         self._cnx.commit()
 
-        self._disconnect()
+    def show_score(self):
+        ''' Return the scoreboard '''
+        self._cursor.execute('SELECT users.username, scoreboard.score, '
+                             'DATE(scoreboard.last_updated) as date '
+                             'FROM scoreboard INNER JOIN users '
+                             'ON scoreboard.user_id = users.id '
+                             'ORDER BY score DESC; ')
 
-    def beer_remove(self, date):
-        ''' Add potential beer dates '''
+        return self._cursor.fetchall()
 
     def date_add(self, date):
         ''' Add potential beer dates '''
