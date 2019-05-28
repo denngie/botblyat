@@ -3,8 +3,7 @@
 
 from discord import Client, Game, Embed
 from settings import TOKEN
-from settings import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASE
-from blyat import Blyat, COMMANDS, UserExists, NoDB
+from blyat import Blyat, COMMANDS, UserExists
 
 CLIENT = Client()
 
@@ -22,12 +21,7 @@ async def on_message(message):
     if message.content in COMMANDS:
         channel = message.channel
         nick = message.author.name
-        try:
-            blyat = Blyat(MYSQL_USER, MYSQL_PASSWORD,
-                          MYSQL_HOST, MYSQL_DATABASE)
-        except NoDB:
-            await channel.send('Något gick fel, förlåt {}'.format(nick))
-            return
+        blyat = Blyat()
 
     if message.content.startswith('!help'):
         text = 'Jag stödjer följande kommandon:'
@@ -44,10 +38,10 @@ async def on_message(message):
 
     elif message.content.startswith('!beer'):
         if message.content.startswith('!beer add'):
-            operation = '+ 1'
+            operation = '+'
             text = 'En öl tillagd åt {}'.format(nick)
         elif message.content.startswith('!beer remove'):
-            operation = '- 1'
+            operation = '-'
             text = 'En öl borttagen åt {}'.format(nick)
         else:
             return
