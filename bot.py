@@ -3,7 +3,7 @@
 
 from discord import Client, Game, Embed
 from settings import TOKEN
-from blyat import Blyat, COMMANDS, UserExists
+from blyat import Blyat, COMMANDS, InvalidDate, ItemExists
 
 CLIENT = Client()
 
@@ -18,7 +18,7 @@ async def on_ready():
 @CLIENT.event
 async def on_message(message):
     ''' Defines what to do with incoming messages '''
-    if message.content in COMMANDS:
+    if message.content in COMMANDS or message.content.startswith('!date add'):
         channel = message.channel
         nick = message.author.name
         blyat = Blyat()
@@ -33,7 +33,7 @@ async def on_message(message):
         try:
             blyat.user_add(nick)
             await channel.send('Du är nu tillagd {}'.format(nick))
-        except UserExists:
+        except ItemExists:
             await channel.send('Du finns redan {}'.format(nick))
 
     elif message.content.startswith('!beer'):
@@ -43,11 +43,23 @@ async def on_message(message):
         elif message.content.startswith('!beer remove'):
             operation = '-'
             text = 'En öl borttagen åt {}'.format(nick)
+        elif message.content.startswith('!beer dates'):
+            result = blyat.show_dates()
+
+            embed = Embed(title='Ölkalender', type='rich',
+                          description='Visar passande datum för ölkväll')
+
+            for (date,) in result:
+                embed.add_field(name=date, value='\u200b')
+            await channel.send(embed=embed)
         else:
             return
 
-        blyat.beer_alter(nick, operation)
-        await channel.send(text)
+        try:
+            blyat.beer_alter(nick, operation)
+            await channel.send(text)
+        except UnboundLocalError:
+            pass
 
     elif message.content.startswith('!score'):
         result = blyat.show_score()
@@ -60,5 +72,15 @@ async def on_message(message):
                             value='Antal: {}, '
                                   'senaste var {}'.format(score, date))
         await channel.send(embed=embed)
+
+    elif message.content.startswith('!date add'):
+        try:
+            blyat.date_add(message.content.split(' ')[2])
+            await channel.send('Datum tillagt till kalendern {}'.format(nick))
+        except (InvalidDate, IndexError):
+            await channel.send('Ogiltigt eller för gammalt datum {}, '
+                               'ange !date add YYYY-MM-DD'.format(nick))
+        except ItemExists:
+            await channel.send('Datumet är redan inlagt {}, '.format(nick))
 
 CLIENT.run(TOKEN)

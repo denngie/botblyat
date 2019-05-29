@@ -3,12 +3,13 @@
 
 # from mysql.connector import connect, errors
 from sqlite3 import connect, IntegrityError, OperationalError
-from re import search
-COMMANDS = ['!help', '!user add', '!beer add', '!beer remove', '!score']
+from datetime import date, datetime
+COMMANDS = ['!help', '!user add', '!beer add', '!beer remove', '!score',
+            '!date add', '!beer dates']
 
 
-class UserExists(Exception):
-    ''' Custom exception for when user already exists '''
+class ItemExists(Exception):
+    ''' Custom exception for when item already exists '''
 
 
 class InvalidDate(Exception):
@@ -49,7 +50,7 @@ class Blyat():
             user_add = 'INSERT INTO scoreboard (username) VALUES (?)'
             self._cursor.execute(user_add, (user,))
         except IntegrityError:
-            raise UserExists()
+            raise ItemExists()
 
     def beer_alter(self, user, operation):
         ''' Add a beer to the users score '''
@@ -65,13 +66,22 @@ class Blyat():
 
         return self._cursor.fetchall()
 
-    def date_add(self, date):
+    def date_add(self, beer_date):
         ''' Add potential beer dates '''
-        if not search('^\\d{4}-\\d{2}-\\d{2}$', date):
+        try:
+            beer_date = datetime.strptime(beer_date, '%Y-%m-%d')
+            if beer_date.date() >= date.today():
+                try:
+                    date_add = 'INSERT INTO beer_dates (date) VALUES (?)'
+                    self._cursor.execute(date_add, (beer_date.date(),))
+                except IntegrityError:
+                    raise ItemExists()
+            else:
+                raise InvalidDate()
+        except ValueError:
             raise InvalidDate()
 
-        try:
-            date_add = 'INSERT INTO beer_dates (date) VALUES (?)'
-            self._cursor.execute(date_add, (date,))
-        except IntegrityError:
-            raise UserExists()
+    def show_dates(self):
+        ''' Return the dates '''
+        self._cursor.execute('SELECT date FROM beer_dates ORDER BY date ASC;')
+        return self._cursor.fetchall()
