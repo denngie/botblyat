@@ -1,9 +1,14 @@
 #!/usr/bin/python3
 ''' A simple Discord bot '''
-
-from discord import Client, Game, Embed
-from settings import TOKEN
-from blyat import Blyat, COMMANDS, InvalidDate, ItemExists
+try:
+    from discord import Client, Game, Embed
+except ImportError:
+    print('Missing discord library (pip3 install discord --user)')
+try:
+    from settings import TOKEN
+    from blyat import Blyat, COMMANDS, InvalidDate, ItemExists
+except ImportError:
+    print('Missing settins file with TOKEN or blyat class file')
 
 CLIENT = Client()
 
