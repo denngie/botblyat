@@ -8,7 +8,100 @@ try:
     from settings import TOKEN
     from blyat import Blyat, COMMANDS, InvalidDate, ItemExists
 except ImportError:
-    print('Missing settins file with TOKEN or blyat class file')
+    print('Missing settings file with TOKEN or blyat class file')
+
+
+class Incoming():
+    ''' Defines what to do with incoming messages '''
+    def __init__(self):
+        self.commands = {'!help': self._help,
+                         '!user add': self._useradd,
+                         '!beer add': self._beermodify,
+                         '!beer remove': self._beermodify,
+                         '!beer dates': self._beerdates,
+                         '!score': self._score,
+                         '!date add': self._dateadd,
+                         }
+        self.blyat = None
+        self.nick = None
+
+    def _help(self, _):
+        ''' Help me '''
+        text = 'Jag stödjer följande kommandon:'
+        for command in self.commands:
+            text += '\n  - {}'.format(command)
+        return text
+
+    def _useradd(self, _):
+        try:
+            self.blyat.user_add(self.nick)
+            return 'Du är nu tillagd {}'.format(self.nick)
+        except ItemExists:
+            return 'Du finns redan {}'.format(self.nick)
+
+    def _beermodify(self, message):
+        if message.content.startswith('!beer add'):
+            operation = '+'
+            text = 'En öl tillagd åt {}'.format(self.nick)
+        elif message.content.startswith('!beer remove'):
+            operation = '-'
+            text = 'En öl borttagen åt {}'.format(self.nick)
+
+        self.blyat.beer_alter(self.nick, operation)
+        return text
+
+    def _beerdates(self, _):
+        result = self.blyat.show_dates()
+
+        embed = Embed(title='Ölkalender', type='rich',
+                      description='Visar passande datum för ölkväll')
+
+        for (date,) in result:
+            embed.add_field(name=date, value='\u200b')
+        return embed
+
+    def _score(self, _):
+        result = self.blyat.show_score()
+
+        embed = Embed(title='Ölräkning', type='rich',
+                      description='Visar antalet öl per person')
+
+        for (username, score, date) in result:
+            embed.add_field(name=username, inline=False,
+                            value='Antal: {}, '
+                                  'senaste var {}'.format(score, date))
+        return embed
+
+    def _dateadd(self, message):
+        try:
+            self.blyat.date_add(message.content.split(' ')[2])
+            return 'Datum tillagt till kalendern {}'.format(self.nick)
+        except (InvalidDate, IndexError):
+            return ('Ogiltigt eller för gammalt datum {}, '
+                    'ange !date add YYYY-MM-DD'.format(self.nick))
+        except ItemExists:
+            return 'Datumet är redan inlagt {}, '.format(self.nick)
+
+    def parse(self, message):
+        ''' Parse the incoming message and call appropriate function '''
+        if message.content in self.commands:
+            self.blyat = Blyat()
+            self.nick = message.author.name
+            return self.commands[message.content](message)
+
+        if message.content.startswith('!date add'):
+            self.blyat = Blyat()
+            self.nick = message.author.name
+            return self.commands['!date add'](message)
+
+        return 'Something weird just happened'
+
+    @staticmethod
+    def validate(command):
+        if command:
+            return True
+        else:
+            return False
 
 CLIENT = Client()
 
@@ -87,5 +180,6 @@ async def on_message(message):
                                'ange !date add YYYY-MM-DD'.format(nick))
         except ItemExists:
             await channel.send('Datumet är redan inlagt {}, '.format(nick))
+
 
 CLIENT.run(TOKEN)

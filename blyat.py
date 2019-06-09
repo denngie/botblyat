@@ -4,6 +4,7 @@
 # from mysql.connector import connect, errors
 from sqlite3 import connect, IntegrityError, OperationalError
 from datetime import date, datetime
+
 COMMANDS = ['!help', '!user add', '!beer add', '!beer remove', '!score',
             '!date add', '!beer dates']
 
