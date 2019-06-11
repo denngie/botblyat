@@ -98,10 +98,8 @@ class Incoming():
 
     @staticmethod
     def validate(command):
-        if command:
-            return True
-        else:
-            return False
+        ''' TBD '''
+        return bool(command)
 
 CLIENT = Client()
 
